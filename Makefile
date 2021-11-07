@@ -1,4 +1,4 @@
-EXEC=reduce_avg
+EXEC=test
 
 OBJ =  $(EXEC) $(EXEC)-debug $(EXEC)-trace
 
