@@ -1,0 +1,71 @@
+This is the github classroom template for COMP 422/534 assignment 3
+
+Files:
+
+  environment.sh:
+     execute the following command to set up your environment for this assignment
+
+     source environment.sh
+
+  reduce_avg.cpp: a sample MPI program that contains some communication
+
+  hello.cpp: a sample MPI hello world program that has no communication
+
+  Makefile:
+    a Makefile that includes recipes for building your program
+
+        usage:
+
+          make # builds three versions of the reduce_avg code
+            # one with debugging symbols
+            # one configured for MPI tracing 
+            # one compiled with optimization for performance
+
+          make EXEC=hello # builds three versions of the hello world code
+
+          make view # views an execution trace with Jumpshot
+
+Slurm scripts:
+
+  submit.sbatch:
+    a sample batch script that you can use to launch a batch job that will 
+    execute an mpi program on a compute node
+
+      usage:
+          sbatch submit.sbatch
+
+  interactive.sh: 
+    a command that you can source to get a command line prompt
+    to run on a node in the interactive partition 
+
+    usage:
+
+      source interactive.sh
+
+
+  reservation.sh: 
+    a command that you can source to get a command line prompt
+    to run on a node in the interactive partition using the class 
+    reservation
+
+    usage:
+
+      source reservation.sh
+
+  any.sh: 
+    a command that you can source to get a command line prompt
+    to run on any node 
+
+    usage:
+
+      source any.sh
+
+To run an MPI program on the cluster with the default settings 
+(number of ranks = number of nodes x ntasks per node):
+
+srun ./<yourprogram>
+
+To run an MPI program on the cluster with a specified number of ranks
+(which must be <= number of nodes x ntasks per node):
+
+srun -n <numranks> ./<yourprogram>
