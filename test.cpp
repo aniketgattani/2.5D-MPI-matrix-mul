@@ -2,6 +2,7 @@
 #include <math.h>
 #include <mpi.h>
 #include <stdlib.h>
+#include "timer.h"
 struct matrix{
 	int** mat;
 	int size;
@@ -92,6 +93,7 @@ int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
 	
 	int rank;
+	int ks, is, js;
     	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[1]);
 	int p = atoi(argv[2]);
@@ -112,6 +114,11 @@ int main(int argc, char** argv) {
     	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,j,0,l), rank, &kcomm);
 	MPI_Comm_split(MPI_COMM_WORLD, computeRank(0,j,k,l), rank, &icomm);
 	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,0,k,l), rank, &jcomm);
+
+	//MPI_Group_rank(kcomm, &ks);
+	//MPI_Group_rank(icomm, &is);
+	//MPI_Group_rank(jcomm, &js);
+	printf("rank is js ks %d %d %d %d\n", rank, is, js, ks);
 	
 	int *sendA, *recvA, *sendB, *recvB, *sendC, *recvC;
 	sendA = (int *)malloc (b * sizeof(int)); 
@@ -125,7 +132,7 @@ int main(int argc, char** argv) {
 	
 
 	initialise_matrices(A,B,C,n/l,rank,k);
-	
+	if(rank == 0) timer_start();
 	if(k==0){
 		copy_matrix(sendA, A);
 		copy_matrix(sendB, B);
@@ -136,28 +143,31 @@ int main(int argc, char** argv) {
 	if(k!=0){
 		fill_matrix(sendA, A);
 		fill_matrix(sendB, B);
+	}
+
 		int r = (l + j + i - (k*l)/c)%l;
 		int s = (l + j - i + (k*l)/c)%l;
 		
-		MPI_Status statusA;
-		MPI_Status statusB;
-
-		copy_matrix(sendA, A);
-
-		//printf("rank: %d s: %d r: %d \n", rank, s, r);
-		MPI_Send(sendA, b, MPI_INT, s, 0, jcomm);
-		MPI_Recv(recvA, b, MPI_INT, r, 0, jcomm, &statusA);
-	
-		fill_matrix(recvA, A);
-	
 		int r1 = (l + i + j - (k*l)/c)%l;
 		int s1 = (l + i - j + (k*l)/c)%l;
 		
+		copy_matrix(sendA, A);
 		copy_matrix(sendB, B);
-		
-		MPI_Send(sendB, b, MPI_INT, s1, 0, icomm);
-		MPI_Recv(recvB, b, MPI_INT, r1, 0, icomm, &statusB);
 
+
+		MPI_Status status[4];
+		MPI_Request reqs[4];
+
+		MPI_Isend(sendA, b, MPI_INT, s, 0, jcomm, &reqs[0]);
+		MPI_Irecv(recvA, b, MPI_INT, r, 0, jcomm, &reqs[1]);
+	
+		MPI_Isend(sendB, b, MPI_INT, s1, 0, icomm, &reqs[2]);
+		MPI_Irecv(recvB, b, MPI_INT, r1, 0, icomm, &reqs[3]);
+
+		MPI_Waitall(4, reqs, status);
+ 
+		printf("rank %d jcomm %d jcomm %d icomm %d icomm %d\n", rank, s, r, s1, r1);	
+		fill_matrix(recvA, A);		
 		fill_matrix(recvB, B);
 		
 		matrix_multiply(A,B,C);
@@ -170,35 +180,43 @@ int main(int argc, char** argv) {
 			copy_matrix(sendB, B);
 			copy_matrix(sendA, A);
 			
-			MPI_Send(sendA, b, MPI_INT, s, 0, jcomm);
-			MPI_Send(sendB, b, MPI_INT, s1, 0, icomm);
-
 			r = (l + r - 1)%l;
+			printf("rank %d jcomm %d icomm %d r %d \n", rank, s, s1, r);	
+			MPI_Isend(sendB, b, MPI_INT, s1, 0, icomm, &reqs[0]);
+			MPI_Irecv(recvB, b, MPI_INT, r, 0, icomm, &reqs[1]);
+			MPI_Waitall(2, reqs, status);
+		/*
 
-			MPI_Recv(recvA, b, MPI_INT, r, 0, jcomm, &statusA);
-			MPI_Recv(recvB, b, MPI_INT, r, 0, icomm, &statusB);
-
+			MPI_Isend(sendA, b, MPI_INT, s, 0, jcomm, &reqs[2]);
+			MPI_Irecv(recvA, b, MPI_INT, r, 0, jcomm, &reqs[3]);
+			MPI_Waitall(2, reqs+2, status);
+		*/
 			matrix_multiply(A,B,C);
 		}
 		//printf("rank: %d \n", rank);
 		
 		copy_matrix(sendC, C);
-	}
+	
 
-	else for(int i=0; i<b; i++) sendC[i]=0;
+	//if(k==0) for(int i=0; i<b; i++) sendC[i]=;
 
 	MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, 0, kcomm);
 	if(k==0){
 		fill_matrix(recvC, C);
-		/*
+		
 		printf("rank: %d \n", rank);
 		print_matrix(A);
 		printf("------------------------ \n");
 		print_matrix(B);
 		printf("------------------------- \n");
 		print_matrix(C);
-		*/
+		
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+	
+	if(rank==0) {
+		double s = timer_elapsed();
+		printf("time is %f \n", s);
+	}
  	MPI_Finalize();
 }
