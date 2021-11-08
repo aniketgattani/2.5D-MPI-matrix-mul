@@ -94,7 +94,8 @@ int main(int argc, char** argv) {
 	
 	int rank;
 	int ks, is, js;
-    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[1]);
 	int p = atoi(argv[2]);
  	int c = atoi(argv[3]);
@@ -111,9 +112,9 @@ int main(int argc, char** argv) {
     	MPI_Comm icomm;
     	MPI_Comm jcomm;
     
-    	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,j,0,l), rank, &kcomm);
-	MPI_Comm_split(MPI_COMM_WORLD, computeRank(0,j,k,l), rank, &icomm);
-	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,0,k,l), rank, &jcomm);
+    MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,j,0,l), rank, &kcomm);
+	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,0,k,l), rank, &icomm);
+	MPI_Comm_split(MPI_COMM_WORLD, computeRank(0,j,k,l), rank, &jcomm);
 
 	//MPI_Group_rank(kcomm, &ks);
 	//MPI_Group_rank(icomm, &is);
@@ -158,11 +159,11 @@ int main(int argc, char** argv) {
 		MPI_Status status[4];
 		MPI_Request reqs[4];
 
-		MPI_Isend(sendA, b, MPI_INT, s, 0, jcomm, &reqs[0]);
-		MPI_Irecv(recvA, b, MPI_INT, r, 0, jcomm, &reqs[1]);
+		MPI_Isend(sendA, b, MPI_INT, s, 0, icomm, &reqs[0]);
+		MPI_Irecv(recvA, b, MPI_INT, r, 0, icomm, &reqs[1]);
 	
-		MPI_Isend(sendB, b, MPI_INT, s1, 0, icomm, &reqs[2]);
-		MPI_Irecv(recvB, b, MPI_INT, r1, 0, icomm, &reqs[3]);
+		MPI_Isend(sendB, b, MPI_INT, s1, 0, jcomm, &reqs[2]);
+		MPI_Irecv(recvB, b, MPI_INT, r1, 0, jcomm, &reqs[3]);
 
 		MPI_Waitall(4, reqs, status);
  
@@ -182,8 +183,8 @@ int main(int argc, char** argv) {
 			
 			r = (l + r - 1)%l;
 			printf("rank %d jcomm %d icomm %d r %d \n", rank, s, s1, r);	
-			MPI_Isend(sendB, b, MPI_INT, s1, 0, icomm, &reqs[0]);
-			MPI_Irecv(recvB, b, MPI_INT, r, 0, icomm, &reqs[1]);
+			MPI_Isend(sendB, b, MPI_INT, s1, 0, jcomm, &reqs[0]);
+			MPI_Irecv(recvB, b, MPI_INT, r, 0, jcomm, &reqs[1]);
 			MPI_Waitall(2, reqs, status);
 		/*
 
