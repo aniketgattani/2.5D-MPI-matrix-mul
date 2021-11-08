@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <math.h>
 #include <mpi.h>
 
@@ -62,6 +63,19 @@ void initialise_matrices(matrix &A, matrix &B, matrix &C, int n, int rank){
 	}	
 }
 
+void print_matrix(matrix &A){
+	int n  = A.size;
+	printf("[");
+	for(int i=0; i<n; i++){
+		printf("[");
+		for(int j=0; j<n-1; j++){
+			printf("%d, ", A.mat[i][j]);
+		}
+		printf("%d]\n", A.mat[i][n-1]);
+	}
+	printf("]");
+}
+
 int main(int argc, char** argv) {
 
 	
@@ -71,7 +85,7 @@ int main(int argc, char** argv) {
     	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[0]);
 	int p = atoi(argv[1]);
- 	int c;
+ 	int c = 2;
 	
 	int l = sqrt(p/c);
 	int k = rank/(l*l);
@@ -104,8 +118,12 @@ int main(int argc, char** argv) {
 		initialise_matrices(A,B,C,n/l,rank);
 		copy_matrix(sendA, A);
 		copy_matrix(sendB, B);
+		print_matrix(A);
+		print_matrix(B);
 	}
-	MPI_Bcast(sendA, b, MPI_INT, rank, kcomm);
+
+	MPI_Bcast(sendA, b, MPI_INT, computeRank(i,j,0,l), kcomm);
+	MPI_Bcast(sendB, b, MPI_INT, computeRank(i,j,0,l), kcomm);
 
 	if(k==0){
 		//MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, rank, kcomm);
@@ -115,7 +133,9 @@ int main(int argc, char** argv) {
 		fill_matrix(sendB, B);
 		int r = (l + j + i - (k*l)/c)%l;
 		int s = (l + j - i + (k*l)/c)%l;
-		
+		print_matrix(A);
+		print_matrix(B);
+	/*	
 		MPI_Status statusA;
 		MPI_Status statusB;
 
@@ -156,7 +176,8 @@ int main(int argc, char** argv) {
 			MPI_Recv(recvB, b, MPI_INT, computeRank(r,j,k,l), 0, jcomm, &statusB);
 
 			matrix_multiply(A,B,C);
-		}		
+		}
+*/		
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
