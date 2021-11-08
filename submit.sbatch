@@ -7,7 +7,7 @@
 #SBATCH --exclusive
 #SBATCH --time=01:00:00 
 #SBATCH --mem-per-cpu=512
-#OPTIONAL --constraint=opath
+#SBATCH --constraint=opath
 
 # sample sbatch script for running the provided MPI program on 4 ranks.
 # when customizing the file for your submissions, just vary nodes and tasks.  
@@ -18,7 +18,9 @@
 # that can be used to execute the job, which will result in longer queueing times.
 
 # run one for timing
-srun ./reduce_avg 2000
+time srun ./test 2000 64 4
+time srun ./test 2000 64 16
+  
 
 # run one to collect a trace
-srun ./reduce_avg-trace 2000
+

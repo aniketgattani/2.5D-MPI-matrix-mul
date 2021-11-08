@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[1]);
 	int p = atoi(argv[2]);
- 	int c = 2;
+ 	int c = atoi(argv[3]);
 	
 	int l = sqrt(p/c);
 	int k = rank/(l*l);
@@ -122,47 +122,41 @@ int main(int argc, char** argv) {
 
 	sendC = (int *)malloc (b * sizeof(int)); 
 	recvC = (int *)malloc (b * sizeof(int)); 
+	
 
 	initialise_matrices(A,B,C,n/l,rank,k);
 	
 	if(k==0){
 		copy_matrix(sendA, A);
 		copy_matrix(sendB, B);
-		print_matrix(A);
-		print_matrix(B);
 	}
-	printf("rank: %d computed %d \n", rank, computeRank(i,j,0,l));
-	MPI_Bcast(sendA, b, MPI_INT, computeRank(i,j,0,l), kcomm);
-	MPI_Bcast(sendB, b, MPI_INT, computeRank(i,j,0,l), kcomm);
+	MPI_Bcast(sendA, b, MPI_INT, 0, kcomm);
+	MPI_Bcast(sendB, b, MPI_INT, 0, kcomm);
 
-	if(k==0){
-		MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, rank, kcomm);
-	}
-	else{
+	if(k!=0){
 		fill_matrix(sendA, A);
 		fill_matrix(sendB, B);
 		int r = (l + j + i - (k*l)/c)%l;
 		int s = (l + j - i + (k*l)/c)%l;
-		print_matrix(A);
-		print_matrix(B);
 		
 		MPI_Status statusA;
 		MPI_Status statusB;
 
 		copy_matrix(sendA, A);
 
-		MPI_Send(sendA, b, MPI_INT, computeRank(i,s,k,l), 0, icomm);
-		MPI_Recv(recvA, b, MPI_INT, computeRank(i,r,k,l), 0, icomm, &statusA);
-
+		//printf("rank: %d s: %d r: %d \n", rank, s, r);
+		MPI_Send(sendA, b, MPI_INT, s, 0, jcomm);
+		MPI_Recv(recvA, b, MPI_INT, r, 0, jcomm, &statusA);
+	
 		fill_matrix(recvA, A);
-		
+	
 		int r1 = (l + i + j - (k*l)/c)%l;
 		int s1 = (l + i - j + (k*l)/c)%l;
 		
 		copy_matrix(sendB, B);
 		
-		MPI_Send(sendB, b, MPI_INT, computeRank(s1,j,k,l), 0, jcomm);
-		MPI_Recv(recvB, b, MPI_INT, computeRank(r1,j,k,l), 0, jcomm, &statusB);
+		MPI_Send(sendB, b, MPI_INT, s1, 0, icomm);
+		MPI_Recv(recvB, b, MPI_INT, r1, 0, icomm, &statusB);
 
 		fill_matrix(recvB, B);
 		
@@ -176,19 +170,35 @@ int main(int argc, char** argv) {
 			copy_matrix(sendB, B);
 			copy_matrix(sendA, A);
 			
-			MPI_Send(sendA, b, MPI_INT, computeRank(i,s,k,l), 0, icomm);
-			MPI_Send(sendB, b, MPI_INT, computeRank(s1,j,k,l), 0, jcomm);
+			MPI_Send(sendA, b, MPI_INT, s, 0, jcomm);
+			MPI_Send(sendB, b, MPI_INT, s1, 0, icomm);
 
 			r = (l + r - 1)%l;
 
-			MPI_Recv(recvA, b, MPI_INT, computeRank(i,r,k,l), 0, icomm, &statusA);
-			MPI_Recv(recvB, b, MPI_INT, computeRank(r,j,k,l), 0, jcomm, &statusB);
+			MPI_Recv(recvA, b, MPI_INT, r, 0, jcomm, &statusA);
+			MPI_Recv(recvB, b, MPI_INT, r, 0, icomm, &statusB);
 
 			matrix_multiply(A,B,C);
 		}
-
+		//printf("rank: %d \n", rank);
+		
+		copy_matrix(sendC, C);
 	}
 
+	else for(int i=0; i<b; i++) sendC[i]=0;
+
+	MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, 0, kcomm);
+	if(k==0){
+		fill_matrix(recvC, C);
+		/*
+		printf("rank: %d \n", rank);
+		print_matrix(A);
+		printf("------------------------ \n");
+		print_matrix(B);
+		printf("------------------------- \n");
+		print_matrix(C);
+		*/
+	}
 	MPI_Barrier(MPI_COMM_WORLD);
  	MPI_Finalize();
 }
