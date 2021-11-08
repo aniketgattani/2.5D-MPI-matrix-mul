@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <mpi.h>
-
+#include <stdlib.h>
 struct matrix{
 	int** mat;
 	int size;
@@ -40,7 +40,7 @@ int computeRank(int i, int j, int k, int l){
 	return k*l*l + i*l + j;
 }
 
-void initialise_matrices(matrix &A, matrix &B, matrix &C, int n, int rank){
+void initialise_matrices(matrix &A, matrix &B, matrix &C, int n, int rank, int k){
 	A.size = n;
 	B.size = n;
 	C.size = n;
@@ -48,6 +48,7 @@ void initialise_matrices(matrix &A, matrix &B, matrix &C, int n, int rank){
 	A.mat = (int **) malloc(n * sizeof(int*));	
 	B.mat = (int **) malloc(n * sizeof(int*));
 	C.mat = (int **) malloc(n * sizeof(int*));
+	
 
 	srand(rank+1);
 	
@@ -55,10 +56,18 @@ void initialise_matrices(matrix &A, matrix &B, matrix &C, int n, int rank){
 		A.mat[i] = (int *) malloc(n * sizeof(int));	
 		B.mat[i] = (int *) malloc(n * sizeof(int));
 		C.mat[i] = (int *) malloc(n * sizeof(int));
+
 		for(int j=0; j<n; j++){
-			A.mat[i][j] = rand();
-			B.mat[i][j] = rand();
-			C.mat[i][j] = 0;			
+			if(k==0){
+				A.mat[i][j] = rand()%100;
+				B.mat[i][j] = rand()%100;
+			}
+			else{
+				A.mat[i][j] = 0;
+				B.mat[i][j] = 0;
+			}
+			C.mat[i][j] = 0;
+			//printf(" i is %d j is %d a[i][j] %d b[i][j] %d\n", i,j, A.mat[i][j], B.mat[i][j]);	
 		}
 	}	
 }
@@ -71,20 +80,21 @@ void print_matrix(matrix &A){
 		for(int j=0; j<n-1; j++){
 			printf("%d, ", A.mat[i][j]);
 		}
-		printf("%d]\n", A.mat[i][n-1]);
+		printf("%d]", A.mat[i][n-1]);
+		if(i!=n-1) printf(",\n");
 	}
-	printf("]");
+	printf("]\n");
 }
 
 int main(int argc, char** argv) {
 
 	
-	MPI_Init(NULL, NULL);
+	MPI_Init(&argc, &argv);
 	
 	int rank;
     	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	int n = atoi(argv[0]);
-	int p = atoi(argv[1]);
+	int n = atoi(argv[1]);
+	int p = atoi(argv[2]);
  	int c = 2;
 	
 	int l = sqrt(p/c);
@@ -99,9 +109,9 @@ int main(int argc, char** argv) {
     	MPI_Comm icomm;
     	MPI_Comm jcomm;
     
-    	MPI_Comm_split(MPI_COMM_WORLD, k, rank, &kcomm);
-	MPI_Comm_split(MPI_COMM_WORLD, i, rank, &icomm);
-	MPI_Comm_split(MPI_COMM_WORLD, j, rank, &jcomm);
+    	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,j,0,l), rank, &kcomm);
+	MPI_Comm_split(MPI_COMM_WORLD, computeRank(0,j,k,l), rank, &icomm);
+	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,0,k,l), rank, &jcomm);
 	
 	int *sendA, *recvA, *sendB, *recvB, *sendC, *recvC;
 	sendA = (int *)malloc (b * sizeof(int)); 
@@ -113,20 +123,20 @@ int main(int argc, char** argv) {
 	sendC = (int *)malloc (b * sizeof(int)); 
 	recvC = (int *)malloc (b * sizeof(int)); 
 
+	initialise_matrices(A,B,C,n/l,rank,k);
+	
 	if(k==0){
-
-		initialise_matrices(A,B,C,n/l,rank);
 		copy_matrix(sendA, A);
 		copy_matrix(sendB, B);
 		print_matrix(A);
 		print_matrix(B);
 	}
-
+	printf("rank: %d computed %d \n", rank, computeRank(i,j,0,l));
 	MPI_Bcast(sendA, b, MPI_INT, computeRank(i,j,0,l), kcomm);
 	MPI_Bcast(sendB, b, MPI_INT, computeRank(i,j,0,l), kcomm);
 
 	if(k==0){
-		//MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, rank, kcomm);
+		MPI_Reduce(sendC, recvC, b, MPI_INT, MPI_SUM, rank, kcomm);
 	}
 	else{
 		fill_matrix(sendA, A);
@@ -135,7 +145,7 @@ int main(int argc, char** argv) {
 		int s = (l + j - i + (k*l)/c)%l;
 		print_matrix(A);
 		print_matrix(B);
-	/*	
+		
 		MPI_Status statusA;
 		MPI_Status statusB;
 
@@ -149,7 +159,6 @@ int main(int argc, char** argv) {
 		int r1 = (l + i + j - (k*l)/c)%l;
 		int s1 = (l + i - j + (k*l)/c)%l;
 		
-
 		copy_matrix(sendB, B);
 		
 		MPI_Send(sendB, b, MPI_INT, computeRank(s1,j,k,l), 0, jcomm);
@@ -177,7 +186,7 @@ int main(int argc, char** argv) {
 
 			matrix_multiply(A,B,C);
 		}
-*/		
+
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
