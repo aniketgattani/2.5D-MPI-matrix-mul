@@ -3,10 +3,6 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include "timer.h"
-struct matrix{
-	int* mat;
-	int size;
-};
 
 void matrix_multiply(int *A, int *B, int *C, int n){
 	for(int i=0;i<n;i++){
@@ -33,7 +29,7 @@ void initialise_matrices(int ***buffA, int ***buffB, int ***buffC, int n, int ra
 	initialise_buffers(buffB, n*n);
 	initialise_buffers(buffC, n*n);
 
-	srand(rank+1);
+	srand(rank/c+1);
 	
 	for(int i=0; i<n; i++){
 
@@ -64,8 +60,47 @@ void print_matrix(int *A, int n){
 	printf("]\n");
 }
 
-void cannon(){
+int cannon(int n, int p, int c, int k, int rank, int *C, MPI_Comm *icomm. MPI_Comm *jcomm){
+	if(k!=0) return 1;
+	int l = sqrt(p/c);
+	int size = n/l;
+	int b = size*size;
+	
+	int cartRank;
 
+
+	int **buffA, **buffB, **buffC;
+	
+	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k, c);
+
+	if(rank == 0) timer_start();
+	
+	s = (l + j + 1)%l;
+	s1 = (l + i + 1)%l;
+	r = (l + j - 1)%l;	
+	r1 = (l + i - 1)%l;
+
+	int nrounds = l;
+	for(int t=0; t < nrounds; t++){
+		MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, jcomm, &reqs[0]);
+		MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, jcomm, &reqs[1]);
+	
+		MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, icomm, &reqs[2]);
+		MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, icomm, &reqs[3]);
+		
+		MPI_Waitall(4, reqs, status);
+		
+		matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);	
+	}		
+	int *res=1;
+	for(int i=0;i<size;i++){
+		for(int j=0;j<size;j++){
+			if(C[i*size + j]!=buffC[0][i*size + j]){
+				*res = 0;
+				break;
+			}
+		}
+	}
 }
 
 int main(int argc, char** argv) {
@@ -87,8 +122,6 @@ int main(int argc, char** argv) {
 	int dims[3] = {l, l, c};
 	const int periodicity[3] = {0,0,0}; 
 	int coords[3];
-
-	matrix A, B, C;
 
 	MPI_Comm cartComm;
 	MPI_Comm kcomm;
@@ -112,7 +145,7 @@ int main(int argc, char** argv) {
 	
 	int **buffA, **buffB, **buffC;
 	
-	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k);
+	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k, c);
 
 	if(rank == 0) timer_start();
 	if(k==0 and verbose){
@@ -169,7 +202,13 @@ int main(int argc, char** argv) {
 
 	if(k==0 and verbose){
 		print_matrix(buffC[1], n/l);
-		
+	}
+
+	if(diff){
+		int res = cannon(n, p, c, k, rank, buffC[1], &icomm, &jcomm);
+		int *finalRes;
+		MPI_Reduce(&res, finalRes, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
+		if(rank == 0) printf("Diff is %d \n", *finalRes);
 	}
 	
 	MPI_Barrier(MPI_COMM_WORLD);
