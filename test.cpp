@@ -39,8 +39,8 @@ void initialise_matrices(int ***buffA, int ***buffB, int ***buffC, int n, int ra
 
 		for(int j=0; j<n; j++){
 			if(k==0){
-				(*buffA[0])[i*n + j] = rand()%100;
-				(*buffB[0])[i*n + j] = rand()%100;
+				(*buffA[0])[i*n + j] = rand()%50;
+				(*buffB[0])[i*n + j] = rand()%50;
 			}
 			else{
 				(*buffA[0])[i*n + j] = 0;
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 	int rank;
 	int ks, is, js;
     
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[1]);
 	int p = atoi(argv[2]);
  	int c = atoi(argv[3]);
@@ -88,32 +88,25 @@ int main(int argc, char** argv) {
     
 	matrix A, B, C;
 
-	MPI_Comm cart;
+	MPI_Comm cartComm;
 	MPI_Comm kcomm;
 	MPI_Comm icomm;
 	MPI_Comm jcomm;	
 	
 	int cartRank;
-	int krank; 
-	int jrank;
-	int irank;
 
-    MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periodicity, true, cart);
-    MPI_Cart_rank(cart, cartRank);
-    MPI_Cart_coords(cart, cartRank, 3, coords);
+	MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periodicity, true, &cartComm);	
+	MPI_Comm_rank(cartComm, &cartRank);
+	MPI_Cart_coords(cartComm, cartRank, 3, coords);
 
+	int i = coords[0];
+	int j = coords[1];
+	int k = coords[2];
 
-    MPI_Comm_split(cart, computeRank(i,j,0,l), computeRank(i,j,k,l), &kcomm);
-	MPI_Comm_split(cart, computeRank(i,0,k,l), computeRank(i,j,k,l), &icomm);
-	MPI_Comm_split(cart, computeRank(0,j,k,l), computeRank(i,j,k,l), &jcomm);
-    
-	MPI_Cart_rank(icomm, irank);
-	MPI_Cart_rank(jcomm, jrank);
-	MPI_Cart_rank(kcomm, krank);
+	MPI_Comm_split(cartComm, computeRank(i,j,0,l), computeRank(i,j,k,l), &kcomm);
+	MPI_Comm_split(cartComm, computeRank(i,0,k,l), computeRank(i,j,k,l), &icomm);
+	MPI_Comm_split(cartComm, computeRank(0,j,k,l), computeRank(i,j,k,l), &jcomm);
 
-	int i = coord[0];
-	int j = coord[1];
-	int k = coord[2];
 	
 	int **buffA, **buffB, **buffC;
 	
