@@ -8,24 +8,6 @@ struct matrix{
 	int size;
 };
 
-/*void copy_matrix(int* buff, matrix &A){
-	int n = A.size;
-	for(int i=0;i<n;i++){
-		for(int j=0;j<n;j++){
-			buff[i*n+j] = A.mat[i][j];
-		}
-	}
-}
-
-void fill_matrix(int* buff, matrix &A){
-	int n = A.size;
-	for(int i=0;i<n;i++){
-		for(int j=0;j<n;j++){
-			A.mat[i][j] = buff[i*n+j];
-		}
-	}
-}*/
-
 void matrix_multiply(int *A, int *B, int *C, int n){
 	for(int i=0;i<n;i++){
 		for(int j=0;j<n;j++){
@@ -50,7 +32,7 @@ void initialise_matrices(int ***buffA, int ***buffB, int ***buffC, int n, int ra
 	initialise_buffers(buffA, n*n);
 	initialise_buffers(buffB, n*n);
 	initialise_buffers(buffC, n*n);
-	//printf("%d %d %d %d \n", rank, n, sizeof(*buffA), sizeof(*buffA[0]));		
+
 	srand(rank+1);
 	
 	for(int i=0; i<n; i++){
@@ -98,26 +80,40 @@ int main(int argc, char** argv) {
 	if(argc > 4) verbose = atoi(argv[4]);
 
 	int l = sqrt(p/c);
-	int k = rank/(l*l);
-	int i = (rank - (l*l)*k)/l;
-	int j = rank%l;
 	int size = n/l;
 	int b = size*size;
-	
+	int dims[3] = {l, l, c};
+	const int periodicity[3] = {0,0,0}; 
+	int coords[3];
+    
 	matrix A, B, C;
 
+	MPI_Comm cart;
 	MPI_Comm kcomm;
-    	MPI_Comm icomm;
-    	MPI_Comm jcomm;
-    
-    	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,j,0,l), rank, &kcomm);
-	MPI_Comm_split(MPI_COMM_WORLD, computeRank(i,0,k,l), rank, &icomm);
-	MPI_Comm_split(MPI_COMM_WORLD, computeRank(0,j,k,l), rank, &jcomm);
+	MPI_Comm icomm;
+	MPI_Comm jcomm;	
+	
+	int cartRank;
+	int krank; 
+	int jrank;
+	int irank;
 
-	MPI_Comm_rank(kcomm, &ks);
-	MPI_Comm_rank(icomm, &is);
-	MPI_Comm_rank(jcomm, &js);
-	//printf("rank is js ks %d %d %d %d\n", rank, is, js, ks);
+    MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periodicity, true, cart);
+    MPI_Cart_rank(cart, cartRank);
+    MPI_Cart_coords(cart, cartRank, 3, coords);
+
+
+    MPI_Comm_split(cart, computeRank(i,j,0,l), computeRank(i,j,k,l), &kcomm);
+	MPI_Comm_split(cart, computeRank(i,0,k,l), computeRank(i,j,k,l), &icomm);
+	MPI_Comm_split(cart, computeRank(0,j,k,l), computeRank(i,j,k,l), &jcomm);
+    
+	MPI_Cart_rank(icomm, irank);
+	MPI_Cart_rank(jcomm, jrank);
+	MPI_Cart_rank(kcomm, krank);
+
+	int i = coord[0];
+	int j = coord[1];
+	int k = coord[2];
 	
 	int **buffA, **buffB, **buffC;
 	
@@ -136,59 +132,47 @@ int main(int argc, char** argv) {
 	MPI_Bcast(buffA[0], b, MPI_INT, 0, kcomm);
 	MPI_Bcast(buffB[0], b, MPI_INT, 0, kcomm);
 
-
-
-		int r = (l + j + i - (k*l)/c)%l;
-		int s = (l + j - i + (k*l)/c)%l;
-		
-		int r1 = (l + i + j - (k*l)/c)%l;
-		int s1 = (l + i - j + (k*l)/c)%l;
-		
-
-
-		MPI_Status status[4];
-		MPI_Request reqs[4];
-
-		MPI_Isend(buffA[0], b, MPI_INT, s, 0, icomm, &reqs[0]);
-		MPI_Irecv(buffA[1], b, MPI_INT, r, 0, icomm, &reqs[1]);
+	int r = (l + j + i - (k*l)/c)%l;
+	int s = (l + j - i + (k*l)/c)%l;
 	
-		MPI_Isend(buffB[0], b, MPI_INT, s1, 0, jcomm, &reqs[2]);
-		MPI_Irecv(buffB[1], b, MPI_INT, r1, 0, jcomm, &reqs[3]);
+	int r1 = (l + i + j - (k*l)/c)%l;
+	int s1 = (l + i - j + (k*l)/c)%l;
+	
 
-		MPI_Waitall(4, reqs, status);
+
+	MPI_Status status[4];
+	MPI_Request reqs[4];
+
+	MPI_Isend(buffA[0], b, MPI_INT, s, 0, icomm, &reqs[0]);
+	MPI_Irecv(buffA[1], b, MPI_INT, r, 0, icomm, &reqs[1]);
+
+	MPI_Isend(buffB[0], b, MPI_INT, s1, 0, jcomm, &reqs[2]);
+	MPI_Irecv(buffB[1], b, MPI_INT, r1, 0, jcomm, &reqs[3]);
+
+	MPI_Waitall(4, reqs, status);
  
-		//printf("rank %d sendA %d recvA %d sendB %d recvB %d\n", rank, s, r, s1, r);	
-		//fill_matrix(recvA, A);		
-		//fill_matrix(recvB, B);
-		
-		matrix_multiply(buffA[1],buffB[1],buffC[0],size);
-		
-		s = (l + j + 1)%l;
-		s1 = (l + i + 1)%l;
-		r = (l + j - 1)%l;	
-		r1 = (l + i - 1)%l;
 
-		for(int t=1; t < l/c; t++){
-			
-			//copy_matrix(sendB, B);
-			//copy_matrix(sendA, A);
-			
-	//		printf("rank %d sendA %d recvA %d sendB %d recvB %d \n", rank, s, r, s1, r1);	
-			MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, jcomm, &reqs[0]);
-			MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, jcomm, &reqs[1]);
-		
-
-			MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, icomm, &reqs[2]);
-			MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, icomm, &reqs[3]);
-			MPI_Waitall(4, reqs, status);
-			
-			//fill_matrix(recvA, A);
-			//fill_matrix(recvB, B);
-		
-			matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);
-			
-		}		
+	matrix_multiply(buffA[1],buffB[1],buffC[0],size);
 	
+	s = (l + j + 1)%l;
+	s1 = (l + i + 1)%l;
+	r = (l + j - 1)%l;	
+	r1 = (l + i - 1)%l;
+
+	for(int t=1; t < l/c; t++){
+		
+		MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, jcomm, &reqs[0]);
+		MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, jcomm, &reqs[1]);
+	
+
+		MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, icomm, &reqs[2]);
+		MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, icomm, &reqs[3]);
+		MPI_Waitall(4, reqs, status);
+		
+		matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);
+		
+	}		
+
 
 	MPI_Reduce(buffC[0], buffC[1], b, MPI_INT, MPI_SUM, 0, kcomm);
 	if(k==0 and verbose){
