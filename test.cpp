@@ -64,18 +64,20 @@ void print_matrix(int *A, int n){
 	printf("]\n");
 }
 
-int main(int argc, char** argv) {
+void cannon(){
 
+}
+
+int main(int argc, char** argv) {
 	
 	MPI_Init(&argc, &argv);
-	
+
 	int rank;
-	int ks, is, js;
-    
-    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	int n = atoi(argv[1]);
 	int p = atoi(argv[2]);
- 	int c = atoi(argv[3]);
+	int c = atoi(argv[3]);
 	int verbose = 0;
 	if(argc > 4) verbose = atoi(argv[4]);
 
@@ -85,7 +87,7 @@ int main(int argc, char** argv) {
 	int dims[3] = {l, l, c};
 	const int periodicity[3] = {0,0,0}; 
 	int coords[3];
-    
+
 	matrix A, B, C;
 
 	MPI_Comm cartComm;
@@ -125,13 +127,11 @@ int main(int argc, char** argv) {
 	MPI_Bcast(buffA[0], b, MPI_INT, 0, kcomm);
 	MPI_Bcast(buffB[0], b, MPI_INT, 0, kcomm);
 
-	int r = (l + j + i - (k*l)/c)%l;
-	int s = (l + j - i + (k*l)/c)%l;
+	int r = (l + j + i - k*(l/c))%l;
+	int s = (l + j - i + k*(l/c))%l;
 	
-	int r1 = (l + i + j - (k*l)/c)%l;
-	int s1 = (l + i - j + (k*l)/c)%l;
-	
-
+	int r1 = (l + i + j - k*(l/c))%l;
+	int s1 = (l + i - j + k*(l/c))%l;
 
 	MPI_Status status[4];
 	MPI_Request reqs[4];
@@ -144,7 +144,6 @@ int main(int argc, char** argv) {
 
 	MPI_Waitall(4, reqs, status);
  
-
 	matrix_multiply(buffA[1],buffB[1],buffC[0],size);
 	
 	s = (l + j + 1)%l;
@@ -152,22 +151,22 @@ int main(int argc, char** argv) {
 	r = (l + j - 1)%l;	
 	r1 = (l + i - 1)%l;
 
-	for(int t=1; t < l/c; t++){
-		
+	int nrounds = l/c;
+	if(k==c-1) nrounds = l-(l/c)*(c-1);
+	for(int t=1; t < nrounds; t++){
 		MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, jcomm, &reqs[0]);
 		MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, jcomm, &reqs[1]);
 	
-
 		MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, icomm, &reqs[2]);
 		MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, icomm, &reqs[3]);
+		
 		MPI_Waitall(4, reqs, status);
 		
-		matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);
-		
+		matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);	
 	}		
 
-
 	MPI_Reduce(buffC[0], buffC[1], b, MPI_INT, MPI_SUM, 0, kcomm);
+
 	if(k==0 and verbose){
 		print_matrix(buffC[1], n/l);
 		
