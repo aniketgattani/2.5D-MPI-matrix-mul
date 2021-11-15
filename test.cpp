@@ -23,7 +23,7 @@ void initialise_buffers(int ***buffA, int b){
 	(*buffA)[0] = (int *)malloc (b * sizeof(int));
 	(*buffA)[1] = (int *)malloc (b * sizeof(int));			
 }
-void initialise_matrices(int ***buffA, int ***buffB, int ***buffC, int n, int rank, int k){
+void initialise_matrices(int ***buffA, int ***buffB, int ***buffC, int n, int rank, int k, int c){
 	
 	initialise_buffers(buffA, n*n);
 	initialise_buffers(buffB, n*n);
@@ -60,20 +60,35 @@ void print_matrix(int *A, int n){
 	printf("]\n");
 }
 
-int cannon(int n, int p, int c, int k, int rank, int *C, MPI_Comm *icomm. MPI_Comm *jcomm){
+int cannon(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *icomm, MPI_Comm *jcomm){
 	if(k!=0) return 1;
 	int l = sqrt(p/c);
 	int size = n/l;
 	int b = size*size;
-	
-	int cartRank;
-
 
 	int **buffA, **buffB, **buffC;
 	
-	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k, c);
+	MPI_Status status[4];
+	MPI_Request reqs[4];
 
-	if(rank == 0) timer_start();
+	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k, c);
+	
+	int r = (l + j + i)%l;
+	int s = (l + j - i)%l;
+	
+	int r1 = (l + i + j)%l;
+	int s1 = (l + i - j)%l;
+
+
+	MPI_Isend(buffA[0], b, MPI_INT, s, 0, *icomm, &reqs[0]);
+	MPI_Irecv(buffA[1], b, MPI_INT, r, 0, *icomm, &reqs[1]);
+
+	MPI_Isend(buffB[0], b, MPI_INT, s1, 0, *jcomm, &reqs[2]);
+	MPI_Irecv(buffB[1], b, MPI_INT, r1, 0, *jcomm, &reqs[3]);
+
+	MPI_Waitall(4, reqs, status);
+ 
+	matrix_multiply(buffA[1],buffB[1],buffC[0],size);
 	
 	s = (l + j + 1)%l;
 	s1 = (l + i + 1)%l;
@@ -81,26 +96,27 @@ int cannon(int n, int p, int c, int k, int rank, int *C, MPI_Comm *icomm. MPI_Co
 	r1 = (l + i - 1)%l;
 
 	int nrounds = l;
-	for(int t=0; t < nrounds; t++){
-		MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, jcomm, &reqs[0]);
-		MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, jcomm, &reqs[1]);
 	
-		MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, icomm, &reqs[2]);
-		MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, icomm, &reqs[3]);
+	for(int t=1; t < nrounds; t++){
+		MPI_Isend(buffB[t%2], b, MPI_INT, s1, 0, *jcomm, &reqs[0]);
+		MPI_Irecv(buffB[1-t%2], b, MPI_INT, r1, 0, *jcomm, &reqs[1]);
+	
+		MPI_Isend(buffA[t%2], b, MPI_INT, s, 0, *icomm, &reqs[2]);
+		MPI_Irecv(buffA[1-t%2], b, MPI_INT, r, 0, *icomm, &reqs[3]);
 		
 		MPI_Waitall(4, reqs, status);
 		
 		matrix_multiply(buffA[1-t%2],buffB[1-t%2],buffC[0],size);	
 	}		
-	int *res=1;
-	for(int i=0;i<size;i++){
-		for(int j=0;j<size;j++){
-			if(C[i*size + j]!=buffC[0][i*size + j]){
-				*res = 0;
-				break;
+	for(int ii=0;ii<size;ii++){
+		for(int jj=0;jj<size;jj++){
+			if(C[ii*size + jj]!=buffC[0][ii*size + jj]){
+				return 0;
 			}
 		}
 	}
+	return 1;
+
 }
 
 int main(int argc, char** argv) {
@@ -114,8 +130,9 @@ int main(int argc, char** argv) {
 	int p = atoi(argv[2]);
 	int c = atoi(argv[3]);
 	int verbose = 0;
+	int diff=0;
 	if(argc > 4) verbose = atoi(argv[4]);
-
+	if(argc > 5) diff = atoi(argv[5]);
 	int l = sqrt(p/c);
 	int size = n/l;
 	int b = size*size;
@@ -199,23 +216,29 @@ int main(int argc, char** argv) {
 	}		
 
 	MPI_Reduce(buffC[0], buffC[1], b, MPI_INT, MPI_SUM, 0, kcomm);
-
+	
 	if(k==0 and verbose){
 		print_matrix(buffC[1], n/l);
 	}
 
-	if(diff){
-		int res = cannon(n, p, c, k, rank, buffC[1], &icomm, &jcomm);
-		int *finalRes;
-		MPI_Reduce(&res, finalRes, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
-		if(rank == 0) printf("Diff is %d \n", *finalRes);
-	}
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 	if(rank==0) {
 		double s = timer_elapsed();
-		printf("time is %f \n", s);
+		printf("time is %f, n: %d, p: %d, c: %d \n", s,n,p,c);
 	}
- 	MPI_Finalize();
+
+	if(diff){
+		int res = cannon(n, p, c, i, j, k, rank, buffC[1], &icomm, &jcomm);
+		int finalRes = 0;
+		MPI_Reduce(&res, &finalRes, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
+		if(rank==0) printf("Diff is %d \n", finalRes);
+	}
+/*
+	int nranks;
+	MPI_Comm_size(MPI_COMM_WORLD, &nranks);
+	printf("no of ranks: %d \n", nranks);
+*/	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Finalize();
 }
