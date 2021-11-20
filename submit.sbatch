@@ -20,8 +20,9 @@
 
 # run one for timing
 lscpu
-N=7520
+N=7560
 time srun -n 64 ./test $N 64 1
+time srun -n 49 ./test $N 49 1
 time srun -n 36 ./test $N 36 1
 time srun -n 25 ./test $N 25 1
 time srun -n 16 ./test $N 16 1
