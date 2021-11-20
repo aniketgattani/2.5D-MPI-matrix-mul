@@ -48,7 +48,7 @@ void initialiseMatrices(int **buffA, int **buffB, int **buffC, int n, int rank, 
 }
 
 // printing matrix
-void print_matrix(int *A, int n){
+void printMatrix(int *A, int n){
 	printf("[");
 	for(int i=0; i<n; i++){
 		printf("[");
@@ -61,8 +61,19 @@ void print_matrix(int *A, int n){
 	printf("]\n");
 }
 
+/* 
+	l is number of processors along length of the front face of grid
+	matSize is matrix size for each processor to process
+	blockSize is the no of elements in matrix for each processor
+*/ 
+void calculateGridDimensions(int *l, int *matSize, int *blockSize, int p, int c, int n){
+	*l = sqrt(p/c);
+	*matSize = n/(*l);
+	*blockSize = (*matSize)*(*matSize);
+}
+
 // Verification using Cannon's blocked algo 
-int summa(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *icomm, MPI_Comm *jcomm){
+int cannon(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *icomm, MPI_Comm *jcomm){
 
 	if(k!=0) return 1;
 	
@@ -72,7 +83,7 @@ int summa(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *
 	// buffers to hold A, B and C matrices. These are stored as 1-D arrays
 	int *buffA, *buffB, *buffC;
 
-	initialiseMatrices(&buffA, &buffB, &buffC, blockSize, rank, k, c);
+	initialiseMatrices(&buffA, &buffB, &buffC, matSize, rank, k, c);
 
 	MPI_Status status[2];
 	
@@ -85,7 +96,7 @@ int summa(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *
 	MPI_Sendrecv_replace(buffB, blockSize, MPI_INT, s1, 1, r1, 1, *jcomm, &status[1]); 
 	matrixMultiply(buffA, buffB, buffC, matSize);
 	
-
+	
 	// SUMMA block iterations
 	s = (l + j + 1)%l;
 	s1 = (l + i + 1)%l;
@@ -94,33 +105,21 @@ int summa(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm *
 
 	int nrounds = l;
 	for(int t=1; t < nrounds; t++){
-		MPI_Sendrecv_replace(buffA, blockSize, MPI_INT, s, 0, r, 0, icomm, &status[0]);		
-		MPI_Sendrecv_replace(buffB, blockSize, MPI_INT, s1, 1, r1, 1, jcomm, &status[1]);
+		MPI_Sendrecv_replace(buffA, blockSize, MPI_INT, s, 0, r, 0, *icomm, &status[0]);		
+		MPI_Sendrecv_replace(buffB, blockSize, MPI_INT, s1, 1, r1, 1, *jcomm, &status[1]);
 		matrixMultiply(buffA,buffB,buffC,matSize);	
 	}
 
 	// check if the calculations match the 2.5D calculations
 	for(int ii=0;ii<matSize;ii++){
 		for(int jj=0;jj<matSize;jj++){
-			if(C[ii*size + jj]!=buffC[0][ii*size + jj]){
+			if(C[ii*matSize + jj]!=buffC[ii*matSize + jj]){
 				return 0;
 			}
 		}
 	}
 	return 1;
 }
-
-/* 
-	l is number of processors along length of the front face of grid
-	matSize is matrix size for each processor to process
-	blockSize is the no of elements in matrix for each processor
-*/ 
-void calculateGridDimensions(int *l, int *matSize, int *blockSize, int p, int c, int n){
-	*l = sqrt(p/c);
-	*matSize = n/l;
-	*blockSize = matSize*matSize;
-}
-
 
 int main(int argc, char** argv) {
 	
@@ -140,7 +139,7 @@ int main(int argc, char** argv) {
 
 	int dims[3] = {l, l, c}, periodicity[3] = {0,0,0}, coords[3];
 
-	MPI_Comm cartComm, kcomm, icom, jcomm;	
+	MPI_Comm cartComm, kcomm, icomm, jcomm;	
 
 	// create MPI cartesian grid and find coords & rank of current MPI process
 	MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periodicity, true, &cartComm);	
@@ -158,13 +157,15 @@ int main(int argc, char** argv) {
 	
 	initialiseMatrices(&buffA, &buffB, &buffC, matSize, rank, k, c);
 
-	if(rank == 0) timer_start();
+	double totalTime, waitTime, t;
+	totalTime = MPI_Wtime();
+
 	// printing matrices
 	if(k==0 and verbose){
 		printf("rank: %d \n", rank);
-		print_matrix(buffA, size);
+		printMatrix(buffA, matSize);
 		printf("---------------------------- \n");
-		print_matrix(buffB, size);
+		printMatrix(buffB, matSize);
 		printf("---------------------------- \n");
 	}
 
@@ -179,8 +180,13 @@ int main(int argc, char** argv) {
 	int s = (l + j - i + k*(l/c))%l;
 	int r1 = (l + i + j - k*(l/c))%l;
 	int s1 = (l + i - j + k*(l/c))%l;
+
+	t = MPI_Wtime();
 	MPI_Sendrecv_replace(buffA, blockSize, MPI_INT, s, 0, r, 0, icomm, &status[0]);
 	MPI_Sendrecv_replace(buffB, blockSize, MPI_INT, s1, 1, r1, 1, jcomm, &status[1]);
+	t = MPI_Wtime() - t;
+	waitTime += t;
+
 	matrixMultiply(buffA,buffB,buffC,matSize);
 	
 	// 1/c of SUMMA block iterations
@@ -193,8 +199,11 @@ int main(int argc, char** argv) {
 	int nrounds = l/c;
 	if(k==c-1) nrounds = l-(l/c)*(c-1);
 	for(int t=1; t < nrounds; t++){
+		t = MPI_Wtime();
 		MPI_Sendrecv_replace(buffA, blockSize, MPI_INT, s, 0, r, 0, icomm, &status[0]);		
 		MPI_Sendrecv_replace(buffB, blockSize, MPI_INT, s1, 1, r1, 1, jcomm, &status[1]);
+		t = MPI_Wtime() - t;
+		waitTime += t;
 		matrixMultiply(buffA,buffB,buffC,matSize);	
 	}		
 	
@@ -204,14 +213,17 @@ int main(int argc, char** argv) {
 	
 	// printing final matrix
 	if(k==0 and verbose){
-		print_matrix(buffC, matSize);
+		printMatrix(buffC, matSize);
 	}
 	
 	MPI_Barrier(MPI_COMM_WORLD);
-	
+
+	totalTime = MPI_Wtime() - totalTime;
+	double maxWaitTime;
+	//MPI_Reduce(&waitTime, &maxWaitTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
 	if(rank==0) {
-		double s = timer_elapsed();
-		printf("time is %f, n: %d, p: %d, c: %d \n", s,n,p,c);
+		printf("execution time: %f, max wait time: %f, n: %d, p: %d, c: %d \n", totalTime, maxWaitTime, n,p,c);		
 	}
 
 	// if verification is to be done, call Cannon's algo, perform verification for each processor and collect result
