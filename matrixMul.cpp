@@ -118,12 +118,17 @@ int cannon(int n, int p, int c, int i, int j, int k, int rank, int *C, MPI_Comm 
 	return 1;
 
 }
-
+/* 
+	l is number of processors along length of the front face of grid
+	matSize is matrix size for each processor to process
+	blockSize is the no of elements in matrix for each processor
+*/ 
 void calculateGridDimensions(int *l, int *matSize, int *blockSize, int p, int c, int n){
 	*l = sqrt(p/c);
 	*matSize = n/l;
 	*blockSize = matSize*matSize;
 }
+
 
 int main(int argc, char** argv) {
 	
@@ -134,41 +139,33 @@ int main(int argc, char** argv) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	// parse command line args
-	int n = atoi(argv[1]);
-	int p = atoi(argv[2]);
-	int c = atoi(argv[3]);
-	int verbose = 0;
-	int diff=0;
+	int n = atoi(argv[1]), p = atoi(argv[2]), c = atoi(argv[3]), verbose = 0, diff=0;
 	if(argc > 4) verbose = atoi(argv[4]);
 	if(argc > 5) diff = atoi(argv[5]);
 
 
-	//
+	int l, matSize, blockSize;
+	calculateGridDimensions(&l, &matSize, &blockSize, p, c, n);
 	
-	int dims[3] = {l, l, c};
-	const int periodicity[3] = {0,0,0}; 
-	int coords[3];
+	int dims[3] = {l, l, c}, periodicity[3] = {0,0,0}, coords[3];
 
-	MPI_Comm cartComm;
-	MPI_Comm kcomm;
-	MPI_Comm icomm;
-	MPI_Comm jcomm;	
+	MPI_Comm cartComm, kcomm, icom, jcomm;	
 	
 	int cartRank;
 
+	// create MPI cartesian grid and find coords & rank of current MPI process
 	MPI_Cart_create(MPI_COMM_WORLD, 3, dims, periodicity, true, &cartComm);	
 	MPI_Comm_rank(cartComm, &cartRank);
 	MPI_Cart_coords(cartComm, cartRank, 3, coords);
 
-	int i = coords[0];
-	int j = coords[1];
-	int k = coords[2];
+	int i = coords[0], j = coords[1], k = coords[2];
 
+	// construct communicators along i,j and k directions
 	MPI_Comm_split(cartComm, computeRank(i,j,0,l), computeRank(i,j,k,l), &kcomm);
 	MPI_Comm_split(cartComm, computeRank(i,0,k,l), computeRank(i,j,k,l), &icomm);
 	MPI_Comm_split(cartComm, computeRank(0,j,k,l), computeRank(i,j,k,l), &jcomm);
 
-	
+	// buffers to hold A, B and C matrices. These are stored as one 
 	int **buffA, **buffB, **buffC;
 	
 	initialise_matrices(&buffA, &buffB, &buffC, size, rank, k, c);
