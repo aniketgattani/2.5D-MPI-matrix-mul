@@ -1,0 +1,96 @@
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                48
+On-line CPU(s) list:   0-47
+Thread(s) per core:    2
+Core(s) per socket:    12
+Socket(s):             2
+NUMA node(s):          2
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 79
+Model name:            Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
+Stepping:              1
+CPU MHz:               2200.000
+CPU max MHz:           2200.0000
+CPU min MHz:           1200.0000
+BogoMIPS:              4390.18
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              30720K
+NUMA node0 CPU(s):     0-11,24-35
+NUMA node1 CPU(s):     12-23,36-47
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch epb cat_l3 cdp_l3 intel_ppin intel_pt ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm cqm rdt_a rdseed adx smap xsaveopt cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts spec_ctrl intel_stibp flush_l1d
+execution time: 1.071990, max wait time: 0.022715, n: 3600, p: 64, c: 1 
+
+real	0m3.056s
+user	0m0.016s
+sys	0m0.017s
+execution time: 1.883484, max wait time: 0.092894, n: 3600, p: 36, c: 1 
+
+real	0m3.456s
+user	0m0.021s
+sys	0m0.012s
+execution time: 2.667153, max wait time: 0.148439, n: 3600, p: 25, c: 1 
+
+real	0m3.997s
+user	0m0.021s
+sys	0m0.011s
+execution time: 4.045826, max wait time: 0.348302, n: 3600, p: 16, c: 1 
+
+real	0m5.164s
+user	0m0.019s
+sys	0m0.012s
+execution time: 6.685984, max wait time: 0.265395, n: 3600, p: 9, c: 1 
+
+real	0m7.750s
+user	0m0.017s
+sys	0m0.015s
+execution time: 14.023529, max wait time: 0.046982, n: 3600, p: 4, c: 1 
+
+real	0m15.010s
+user	0m0.019s
+sys	0m0.014s
+execution time: 0.940940, max wait time: 0.033708, n: 3600, p: 72, c: 2 
+
+real	0m3.069s
+user	0m0.015s
+sys	0m0.017s
+execution time: 1.636981, max wait time: 0.564326, n: 3600, p: 50, c: 2 
+
+real	0m3.380s
+user	0m0.018s
+sys	0m0.015s
+execution time: 2.120821, max wait time: 0.158141, n: 3600, p: 32, c: 2 
+
+real	0m3.545s
+user	0m0.020s
+sys	0m0.011s
+execution time: 4.620163, max wait time: 2.523474, n: 3600, p: 18, c: 2 
+
+real	0m5.842s
+user	0m0.017s
+sys	0m0.014s
+execution time: 7.014625, max wait time: 0.207517, n: 3600, p: 8, c: 2 
+
+real	0m8.100s
+user	0m0.018s
+sys	0m0.013s
+execution time: 2.207816, max wait time: 1.211035, n: 3600, p: 48, c: 3 
+
+real	0m3.920s
+user	0m0.018s
+sys	0m0.012s
+execution time: 2.618756, max wait time: 0.434789, n: 3600, p: 27, c: 3 
+
+real	0m3.991s
+user	0m0.015s
+sys	0m0.015s
+execution time: 1.382911, max wait time: 0.288552, n: 3600, p: 64, c: 4 
+
+real	0m3.355s
+user	0m0.018s
+sys	0m0.013s

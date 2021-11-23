@@ -7,29 +7,38 @@ Files:
 
      source environment.sh
 
-  reduce_avg.cpp: a sample MPI program that contains some communication
 
-  hello.cpp: a sample MPI hello world program that has no communication
+  matrixMul.cpp: 
+     contains the 2.5D matrix multiplication program and a verification step using Cannon's algorithm
+
+     ./matrixMul N p c verbose diff
+     N is the matrix size
+     p is the number of processors
+     c is the grid depth used in the 2.5D algorithm
+     verbose is for printing the matrices A, B and C by each processor in the front face 
+     diff is to verify the 2.5D obtained result to the cannon's output
+
 
   Makefile:
     a Makefile that includes recipes for building your program
 
         usage:
 
-          make # builds three versions of the reduce_avg code
+          make # builds three versions of the matrixMul code
             # one with debugging symbols
             # one configured for MPI tracing 
             # one compiled with optimization for performance
 
-          make EXEC=hello # builds three versions of the hello world code
-
           make view # views an execution trace with Jumpshot
+
+          make runp-hpc # runs hpcviewer for the matrixMul code. Default values are: N=7500, W=32, c=2
 
 Slurm scripts:
 
   submit.sbatch:
     a sample batch script that you can use to launch a batch job that will 
-    execute an mpi program on a compute node
+    execute an mpi program on a compute node. Runs tasks for N=7560 for various possible values
+    of p and c. Check report for in-depth analysis
 
       usage:
           sbatch submit.sbatch

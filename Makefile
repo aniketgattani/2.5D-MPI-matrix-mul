@@ -1,8 +1,12 @@
-EXEC=reduce_avg
+EXEC=matrixMul
 
 OBJ =  $(EXEC) $(EXEC)-debug $(EXEC)-trace
 
 VIEWER=jumpshot
+
+N=7500
+W=32
+c=2
 
 # flags
 OPT=-O2 -g
@@ -26,6 +30,15 @@ $(EXEC): $(EXEC).cpp
 runp:
 	echo try running like this when on an interactive compute node:
 	echo "srun -n <number of processors> yourprogram <arguments>"
+
+#run the hpc checker
+runp-hpc: $(EXEC)
+	@echo use make runp-hpc N=matrix_size W=workers c=depth
+	@/bin/rm -rf $(EXEC).m $(EXEC).d $(EXEC).hpcstruct
+	srun -n $(W) hpcrun -e REALTIME@1000 -t -o $(EXEC).m ./$(EXEC) $(N) $(W) $(c)
+	hpcstruct $(EXEC)
+	hpcprof -S $(EXEC).hpcstruct -o $(EXEC).d $(EXEC).m
+	hpcviewer $(EXEC).d 
 
 #view a trace with jumpshot 
 view:

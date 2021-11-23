@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --export=ALL
-#SBATCH --nodes=1 
-#SBATCH --ntasks=4
-#SBATCH --ntasks-per-node=16 
-#SBATCH --cpus-per-task=1 
+#SBATCH --nodes=4
 #SBATCH --exclusive
-#SBATCH --time=01:00:00 
+#SBATCH --time=00:30:00  
+#SBATCH --ntasks-per-node=16 
 #SBATCH --mem-per-cpu=512
-#OPTIONAL --constraint=opath
+#SBATCH --constraint=opath
+#SBATCH --partition=scavenge
+#SBATCH --mem-per-cpu=512
+#SBATCH --export=ALL
 
 # sample sbatch script for running the provided MPI program on 4 ranks.
 # when customizing the file for your submissions, just vary nodes and tasks.  
@@ -18,7 +19,24 @@
 # that can be used to execute the job, which will result in longer queueing times.
 
 # run one for timing
-srun ./reduce_avg 2000
+lscpu
+N=7560
+time srun -n 64 ./matrixMul $N 64 1
+time srun -n 49 ./matrixMul $N 49 1
+time srun -n 36 ./matrixMul $N 36 1
+time srun -n 25 ./matrixMul $N 25 1
+time srun -n 16 ./matrixMul $N 16 1
+time srun -n 9  ./matrixMul $N 9  1
+time srun -n 4  ./matrixMul $N 4  1
+time srun -n 72 ./matrixMul $N 72 2
+time srun -n 50 ./matrixMul $N 50 2
+time srun -n 32 ./matrixMul $N 32 2
+time srun -n 18 ./matrixMul $N 18 2
+time srun -n 8  ./matrixMul $N 8  2
+time srun -n 48 ./matrixMul $N 48 3
+time srun -n 27 ./matrixMul $N 27 3
+time srun -n 64 ./matrixMul $N 64 4
 
 # run one to collect a trace
-srun ./reduce_avg-trace 2000
+
+
