@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --export=ALL
-#SBATCH --nodes=3
+#SBATCH --nodes=4
 #SBATCH --exclusive
 #SBATCH --time=00:30:00  
-#SBATCH --ntasks-per-node=24 
+#SBATCH --ntasks-per-node=16 
 #SBATCH --mem-per-cpu=512
 #SBATCH --constraint=opath
 #SBATCH --partition=scavenge
@@ -21,21 +21,21 @@
 # run one for timing
 lscpu
 N=7560
-time srun -n 64 ./test $N 64 1
-time srun -n 49 ./test $N 49 1
-time srun -n 36 ./test $N 36 1
-time srun -n 25 ./test $N 25 1
-time srun -n 16 ./test $N 16 1
-time srun -n 9  ./test $N 9  1
-time srun -n 4  ./test $N 4  1
-time srun -n 72 ./test $N 72 2
-time srun -n 50 ./test $N 50 2
-time srun -n 32 ./test $N 32 2
-time srun -n 18 ./test $N 18 2
-time srun -n 8  ./test $N 8  2
-time srun -n 48 ./test $N 48 3
-time srun -n 27 ./test $N 27 3
-time srun -n 64 ./test $N 64 4
+time srun -n 64 ./matrixMul $N 64 1
+time srun -n 49 ./matrixMul $N 49 1
+time srun -n 36 ./matrixMul $N 36 1
+time srun -n 25 ./matrixMul $N 25 1
+time srun -n 16 ./matrixMul $N 16 1
+time srun -n 9  ./matrixMul $N 9  1
+time srun -n 4  ./matrixMul $N 4  1
+time srun -n 72 ./matrixMul $N 72 2
+time srun -n 50 ./matrixMul $N 50 2
+time srun -n 32 ./matrixMul $N 32 2
+time srun -n 18 ./matrixMul $N 18 2
+time srun -n 8  ./matrixMul $N 8  2
+time srun -n 48 ./matrixMul $N 48 3
+time srun -n 27 ./matrixMul $N 27 3
+time srun -n 64 ./matrixMul $N 64 4
 
 # run one to collect a trace
 

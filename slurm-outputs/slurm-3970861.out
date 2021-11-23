@@ -1,0 +1,109 @@
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                48
+On-line CPU(s) list:   0-47
+Thread(s) per core:    2
+Core(s) per socket:    12
+Socket(s):             2
+NUMA node(s):          2
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 79
+Model name:            Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
+Stepping:              1
+CPU MHz:               2200.000
+CPU max MHz:           2200.0000
+CPU min MHz:           1200.0000
+BogoMIPS:              4390.18
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              30720K
+NUMA node0 CPU(s):     0-11,24-35
+NUMA node1 CPU(s):     12-23,36-47
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch epb cat_l3 cdp_l3 intel_ppin intel_pt ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm cqm rdt_a rdseed adx smap xsaveopt cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts spec_ctrl intel_stibp flush_l1d
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 64 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 25.175961, max wait time: 12.028033, n: 7560, p: 64, c: 1 
+
+real	0m27.632s
+user	0m0.016s
+sys	0m0.015s
+execution time: 17.688792, max wait time: 1.972921, n: 7560, p: 49, c: 1 
+
+real	0m19.792s
+user	0m0.016s
+sys	0m0.014s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 36 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 27.340845, max wait time: 2.754507, n: 7560, p: 36, c: 1 
+
+real	0m29.080s
+user	0m0.016s
+sys	0m0.014s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 25 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 34.267347, max wait time: 3.496887, n: 7560, p: 25, c: 1 
+
+real	0m35.837s
+user	0m0.018s
+sys	0m0.011s
+execution time: 75.933391, max wait time: 27.281002, n: 7560, p: 16, c: 1 
+
+real	1m17.324s
+user	0m0.015s
+sys	0m0.014s
+execution time: 92.681028, max wait time: 22.346177, n: 7560, p: 9, c: 1 
+
+real	1m33.977s
+user	0m0.014s
+sys	0m0.015s
+execution time: 278.665876, max wait time: 17.748365, n: 7560, p: 4, c: 1 
+
+real	4m40.267s
+user	0m0.018s
+sys	0m0.011s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 72 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 15.112075, max wait time: 0.595454, n: 7560, p: 72, c: 2 
+
+real	0m17.776s
+user	0m0.016s
+sys	0m0.015s
+execution time: 21.431971, max wait time: 2.131997, n: 7560, p: 50, c: 2 
+
+real	0m23.612s
+user	0m0.017s
+sys	0m0.014s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 32 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 45.537766, max wait time: 3.187745, n: 7560, p: 32, c: 2 
+
+real	0m47.324s
+user	0m0.016s
+sys	0m0.013s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 18 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 61.883801, max wait time: 0.945817, n: 7560, p: 18, c: 2 
+
+real	1m3.439s
+user	0m0.024s
+sys	0m0.004s
+execution time: 244.579442, max wait time: 0.202889, n: 7560, p: 8, c: 2 
+
+real	4m6.275s
+user	0m0.012s
+sys	0m0.018s
+execution time: 47.751543, max wait time: 4.350590, n: 7560, p: 48, c: 3 
+
+real	0m49.922s
+user	0m0.019s
+sys	0m0.013s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 27 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 61.986586, max wait time: 0.093026, n: 7560, p: 27, c: 3 
+
+real	1m3.811s
+user	0m0.017s
+sys	0m0.015s
+srun: Warning: can't honor --ntasks-per-node set to 16 which doesn't match the requested tasks 64 with the number of requested nodes 3. Ignoring --ntasks-per-node.
+execution time: 24.357161, max wait time: 0.070518, n: 7560, p: 64, c: 4 
+
+real	0m26.921s
+user	0m0.016s
+sys	0m0.016s

@@ -1,4 +1,4 @@
-EXEC=test
+EXEC=matrixMul
 
 OBJ =  $(EXEC) $(EXEC)-debug $(EXEC)-trace
 
